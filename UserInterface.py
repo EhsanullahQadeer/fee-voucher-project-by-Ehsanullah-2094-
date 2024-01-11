@@ -10,11 +10,13 @@ try:
     from tkinter import ttk            
     import Voucher
     import Database
+    import requests
+    from Database import domain
+
     
 except:
     print( "One of the required module is missing." )
 ###  colors to use
-
 color1 = "#666666"   # Grey
 color2 = "#F0F0F0"      # White
 color3 = "#cc6600"      # Brown
@@ -146,12 +148,22 @@ class Login(  Frame ):
         
 
     def log_in_info( self , *args ):
-        check = Database.login( self.Entry1.get() , self.Entry2.get() )
-
-        if check:
+          data = {'username': self.Entry1.get(), 'password': self.Entry2.get()}
+          response = requests.post(domain+"/auth/login",json=data)
+          if response.status_code == 200:
             self.controller.show_frame( 'Main' )
-        else:
-            self.mess_lab.configure( text = "* Enter Valid username and password" )
+          else:
+              self.mess_lab.configure( text = "* Enter Valid username and password" )
+       
+            
+           
+           
+        # check = Database.login( self.Entry1.get() , self.Entry2.get() )
+
+        # if check:
+        #     self.controller.show_frame( 'Main' )
+        # else:
+        #     self.mess_lab.configure( text = "* Enter Valid username and password" )
 
 
 
@@ -377,9 +389,22 @@ class Main( Frame ):
         tree.heading("#8", text="EXAMINATION FEE")
         tree.column('#8', minwidth=0, width=120)
         tree.pack(fill='x')
+        students_data = Database.get_students()
 
-        for row in Database.get_students():
-            tree.insert("",END,values=row)
+        for student in students_data:
+         # Extract values from the dictionary
+          values = (
+            student.get("studentName", ""),
+            student.get("fatherName", ""),
+            student.get("class", ""),
+            student.get("dateOfBirth", ""),
+            student.get("rollNo", ""),
+            student.get("tutionFee", ""),
+            student.get("annualFee", ""),
+            student.get("examinationFee", "")
+            )
+          tree.insert("", END, values=values)
+
         self.sub_frame_2.lift()
      
 
@@ -455,11 +480,11 @@ class Main( Frame ):
     def enter_in_record( self ):
         """This is a method to record data in database."""
 
-        list_roll = Database.vouch( )
+        # list_roll = Database.vouch( )
         flag = 0
-        for j in list_roll:
-            if j == self.Entry3.get( ):
-                flag = 1
+        # for j in list_roll:
+        #     if j == self.Entry3.get( ):
+        #         flag = 1
         if flag == 0 :
             Database.insert( self.Entry1.get( ) , self.Entry2.get( ) , self.var.get( ) , self.Entry4.get( ) , self.Entry3.get( ) , self.Entry5.get( ) , self.Entry6.get( ) , self.Entry7.get( ))
             self.show_after_change( )
@@ -473,13 +498,33 @@ class Main( Frame ):
     def not_record( self ):
         self.window.destroy( )
         
+    def voucher(self, *args):
+     data = Database.search_voucher(self.Ent1.get())
 
-    def voucher( self , *args ):
-        Total = self.arg.total(self.Ent1.get( ))
-        a,b,c,d,e,f,g,h = Database.search_voucher( self.Ent1.get( ) )
+     if data:
+        a, b, c, d, e, f, g = (
+            data.get('studentName', ''),
+            data.get('fatherName', ''),
+            data.get('rollNo', ''),
+            data.get('class', ''),
+            data.get('tutionFee', ''),
+            data.get('examinationFee', ''),
+            data.get('annualFee', ''),
+        )
+
+        # Assuming that 'tutionFee', 'examinationFee', and 'annualFee' are numeric values
+        Total = e + f + g
+        print("Total",Total)
+
+        voucher = Voucher.Generate_Voucher(
+    a, b, c, d, self.var2.get(), e, f,
+    Total,
+    "{}/{}/{}".format(self.var3.get(), self.var2.get(), self.Ent2.get()),
+    "{}/{}/{}".format(self.var4.get(), self.var5.get(), self.Ent2.get())
+)
+     else:
+        print("Record not found for roll number:", self.Ent1.get())
         
-        voucher = Voucher.Generate_Voucher(  a , b , e , c , self.var2.get() , f , h , Total , "{}/{}/{}".format(self.var3.get(),self.var2.get(),self.Ent2.get()),"{}/{}/{}".format(self.var4.get(),self.var5.get(),self.Ent2.get()) )
-
 
 
   

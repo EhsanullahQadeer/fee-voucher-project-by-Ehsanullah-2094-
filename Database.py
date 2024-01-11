@@ -1,11 +1,13 @@
 
 try:
-    import sqlite3   
+    import sqlite3  
+    import requests 
 
 except:
     print( "One of the required module is missing." )
 
 #  creating database
+domain="http://localhost:5000/api/v1"
 
 OBJ=sqlite3.connect("students.db")    
 obj=OBJ.cursor( )
@@ -60,15 +62,45 @@ class composition:
         return total_fee
 
 
-def insert ( student_name , father_name , Class , date_of_birth , roll_no , tution_fee , annual_fee , examination_fee ):
-    """
-    This function inserts record in database
+# def insert ( student_name , father_name , Class , date_of_birth , roll_no , tution_fee , annual_fee , examination_fee ):
+#     """
+#     This function inserts record in database
 
-    It is called in insert function in file UserInterface
-    """
+#     It is called in insert function in file UserInterface
+#     """
+#     ""
     
-    with OBJ:
-        obj.execute("INSERT INTO  students VALUES('{}','{}','{}','{}','{}',{},{},{})".format(student_name ,father_name,Class,date_of_birth ,roll_no,tution_fee,annual_fee,examination_fee))
+#     with OBJ:
+#         obj.execute("INSERT INTO  students VALUES('{}','{}','{}','{}','{}',{},{},{})".format(student_name ,father_name,Class,date_of_birth ,roll_no,tution_fee,annual_fee,examination_fee))
+def insert(studentName, fatherName, Class, dateOfBirth, rollNo, tutionFee, annualFee, examinationFee):
+    """
+    This function inserts a record into the database by making a POST request to the Node.js endpoint.
+    """
+    # Prepare the data payload
+    data = {
+         "studentName":studentName,
+         "fatherName": fatherName,
+         "class": Class,
+         "dateOfBirth":  dateOfBirth,
+         "dateOfBirth":  dateOfBirth,
+         "rollNo":rollNo,
+         "tutionFee" :tutionFee,
+         "annualFee":annualFee,
+         "examinationFee":examinationFee
+    }
+    print("data",data)
+    try:
+        # Make a POST request to the Node.js endpoint
+        response = requests.post(domain+"/insert-record", json=data)
+
+        # Check the response status
+        if response.status_code == 201:
+            print("Student record inserted successfully")
+        else:
+            print(f"Error: {response.status_code} - {response.text}")
+
+    except Exception as e:
+        print(f"Error: {e}")
 
 OBJ.commit()        
 def updating( student_name  , father_name , Class , date_of_birth , roll_no , tution_fee , annual_fee , examination_fee):
@@ -83,26 +115,33 @@ def updating( student_name  , father_name , Class , date_of_birth , roll_no , tu
 
 
 
-
-
-
-
 def search_voucher (  roll = None ):
-        
-    with OBJ:
-        obj.execute("SELECT * FROM students WHERE roll_no='{}'".format(roll))
-    Voucher=obj.fetchone()
-    return Voucher
+    params = {"rollNo": roll}
+    response = requests.get(domain+"/get-single-record", params=params)
+    if response.status_code == 200:
+            return response.json().get("singleRecord", {})
+    else:
+            print(f"Error fetching record: {response.status_code} - {response.text}")
+            return {}
 
+def get_students():
+    '''
+    This method retrieves student records from the server.
+    '''
+    try:
+        response = requests.get(domain + "/get-student-record")
+        data=response.json()
+        # Check the response status
+        if response.status_code == 200:
+            rows = data["allStudentsRecord"]
+            return rows
+        else:
+            print(f"Error: {response.status_code} - {response.text}")
+            return None  # or raise an exception if you want to handle errors differently
 
-def get_students( ):
-    '''
-    This method displays the complete Database
-    '''
-    
-    obj.execute("SELECT * FROM students" )
-    rows=obj.fetchall()
-    return rows
+    except Exception as e:
+        print(f"Error: {e}")
+        return None
 
 
 def vouch( ):
@@ -111,11 +150,11 @@ def vouch( ):
 
     These roll no are used to generate Voucher of all the students in the database
     """
-    X=get_students()
-    roll_call=[ ]
-    for i in X:
-        roll_call.append(i[4])
-    return roll_call
+    # X=get_students()
+    # roll_call=[ ]
+    # for i in X:
+    #     roll_call.append(i[4])
+    # return roll_call
 
 OBJ.commit()
 
