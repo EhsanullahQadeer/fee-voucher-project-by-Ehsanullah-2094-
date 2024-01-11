@@ -1,6 +1,5 @@
 import mongoose from "mongoose";
 export const connect = () => {
-  console.log(process.env.MONGO_URI);
   mongoose
     .connect(process.env.MONGO_URI)
     .then(() => console.info("Connected to MongoDB"))
